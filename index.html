@@ -1,285 +1,1515 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>今天是星期幾？</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0e7a58">
+<title>羽球分攤 · 每週費用試算</title>
 <style>
-  :root {
-    --accent: #7c5cff;
-    --accent-2: #22d3ee;
-    --text: #f5f3ff;
-    --muted: rgba(245, 243, 255, 0.6);
+  :root{
+    --bg:#f3f5f1;
+    --surface:#ffffff;
+    --ink:#16211b;
+    --ink-soft:#33423a;
+    --muted:#6b7871;
+    --line:#e2e7e1;
+    --line-strong:#d3dbd4;
+    --accent:#0e7a58;
+    --accent-strong:#0a5c43;
+    --accent-deep:#084b37;
+    --accent-soft:#e6f5ee;
+    --amber:#a9540a;
+    --amber-bg:#fff4d6;
+    --amber-line:#f2d18a;
+    --danger:#b42318;
+    --radius:18px;
+    --shadow:0 1px 2px rgba(18,40,29,.04), 0 10px 30px -12px rgba(18,40,29,.14);
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    color:var(--ink);
+    background:
+      radial-gradient(900px 420px at 12% -8%, rgba(14,122,88,.09), transparent 62%),
+      radial-gradient(720px 380px at 100% 0%, rgba(169,84,10,.05), transparent 58%),
+      var(--bg);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,p{margin:0}
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer}
+  .wrap{width:min(1120px, calc(100% - 32px));margin-inline:auto}
+
+  /* Header */
+  .site-header{
+    position:sticky;top:0;z-index:20;
+    background:rgba(243,245,241,.84);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid rgba(211,219,212,.75);
+  }
+  .header-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 0}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{
+    width:44px;height:44px;flex:none;border-radius:14px;
+    background:linear-gradient(150deg,#13906a,#0a5a42);
+    display:grid;place-items:center;
+    box-shadow:0 7px 18px -7px rgba(10,92,67,.6);
+  }
+  .logo svg{width:27px;height:27px;display:block}
+  .brand h1{font-size:19px;line-height:1.2;letter-spacing:-.02em}
+  .brand p{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .warn{
+    margin-top:14px;padding:10px 14px;border-radius:12px;
+    background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12.5px;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Layout */
+  main{padding:22px 0 40px}
+  .layout{
+    display:grid;gap:20px;align-items:start;
+    grid-template-columns:minmax(0,1.6fr) minmax(340px,1fr);
+    grid-template-areas:"main result" "main history";
+  }
+  .col-main{grid-area:main;display:grid;gap:20px;min-width:0}
+  .result-card{grid-area:result;scroll-margin-top:84px}
+  .history-card{grid-area:history;min-width:0}
 
-  body {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
-    color: var(--text);
-    background: radial-gradient(circle at 15% 15%, #4c1d95 0%, transparent 45%),
-                radial-gradient(circle at 85% 85%, #0e7490 0%, transparent 45%),
-                #0b0b14;
-    overflow: hidden;
+  .card{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+    box-shadow:var(--shadow);
+  }
+  .card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+  .card-head h2{font-size:16.5px;letter-spacing:-.01em}
+  .hint{font-size:12px;color:var(--muted)}
+
+  /* Buttons */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:1px solid transparent;border-radius:11px;padding:10px 15px;
+    font-size:13.5px;font-weight:700;line-height:1.2;white-space:nowrap;
+    transition:background .15s,border-color .15s,color .15s,transform .05s;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--accent);color:#fff;box-shadow:0 6px 14px -8px rgba(10,92,67,.75)}
+  .btn.primary:hover{background:var(--accent-strong)}
+  .btn.secondary{background:#fff;border-color:var(--line-strong);color:var(--ink-soft)}
+  .btn.secondary:hover{background:#fafcf9;border-color:#b9c7bd}
+  .btn.ghost{background:rgba(255,255,255,.6);border-color:var(--line-strong);color:var(--ink-soft)}
+  .btn.ghost:hover{background:#fff}
+  .btn.danger{background:#fff;border-color:#f0d1cd;color:var(--danger)}
+  .btn.danger:hover{background:#fdf1f0}
+  .btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .btn:focus-visible,.pill-toggle:focus-visible,.icon-btn:focus-visible,.week-toggle:focus-visible{
+    outline:2px solid var(--accent);outline-offset:2px;
   }
 
-  /* 漂浮光暈 */
-  .orb {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.45;
-    pointer-events: none;
-    animation: drift 18s ease-in-out infinite alternate;
+  /* Inputs */
+  .field{display:grid;gap:6px;min-width:0}
+  .field > span{font-size:12.5px;font-weight:700;color:var(--ink-soft)}
+  .input-wrap{
+    display:flex;align-items:center;gap:7px;
+    border:1.5px solid var(--line);border-radius:12px;
+    background:#fbfcfa;padding:8px 12px;
+    transition:border-color .15s,box-shadow .15s,background .15s;
   }
-  .orb.one { width: 380px; height: 380px; background: var(--accent); top: -120px; left: -100px; }
-  .orb.two { width: 320px; height: 320px; background: var(--accent-2); bottom: -120px; right: -80px; animation-delay: -9s; }
+  .input-wrap:focus-within{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(14,122,88,.12)}
+  .input-wrap .prefix,.input-wrap .suffix{flex:none;font-size:12.5px;font-weight:700;color:var(--muted)}
+  .input-wrap input{
+    width:100%;min-width:0;border:0;outline:0;background:transparent;padding:0;
+    font-size:18px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;
+  }
+  .input-wrap input::placeholder{color:#b6c0ba;font-weight:600}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield;appearance:textfield}
 
-  @keyframes drift {
-    from { transform: translate3d(0, 0, 0) scale(1); }
-    to   { transform: translate3d(40px, 30px, 0) scale(1.15); }
+  .date-row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .date-field{max-width:210px}
+  .date-field input{
+    border:1.5px solid var(--line);border-radius:12px;background:#fbfcfa;
+    padding:9px 12px;font-size:14px;font-weight:700;outline:0;
+  }
+  .date-field input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(14,122,88,.12)}
+  .date-note{font-size:12.5px;color:var(--muted);padding-bottom:10px}
+
+  .fee-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .fee-summary{
+    display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;
+    margin-top:15px;padding:11px 13px;border-radius:12px;
+    background:#f6faf7;border:1px dashed #d3e5da;
+    font-size:12.5px;color:var(--muted);
+  }
+  .fee-summary b{color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+  .fee-summary em{font-style:normal;font-size:11.5px;color:#94a39b}
+  .fee-summary .equal{color:#a9b5ae}
+  .fee-summary .grand{margin-left:auto;color:var(--accent-strong);font-weight:700}
+  .fee-summary .grand b{font-size:16px;color:var(--accent-strong)}
+
+  .add-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .text-input{
+    flex:1 1 200px;min-width:0;padding:10px 12px;
+    border:1.5px solid var(--line);border-radius:11px;background:#fbfcfa;
+    font-size:14px;outline:0;transition:border-color .15s,box-shadow .15s,background .15s;
+  }
+  .text-input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(14,122,88,.12)}
+  .check-inline{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);white-space:nowrap;cursor:pointer}
+  .check-inline input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+  .empty{
+    padding:15px;margin-bottom:12px;border:1.5px dashed var(--line-strong);border-radius:12px;
+    text-align:center;font-size:12.5px;color:var(--muted);
+  }
+  /* Roster */
+  .roster{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+  .roster li{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 10px;border:1.5px solid var(--line);border-radius:13px;
+    background:#fff;transition:background .15s,border-color .15s;
+  }
+  .roster li.attending{background:#f2faf6;border-color:#bfe1d1}
+  .roster li.is-guest{background:#fbfbff}
+  .roster li.is-guest.attending{background:#f6f7ff;border-color:#d9dcf5}
+  .member-check{display:grid;place-items:center;flex:none;padding:2px}
+  .member-check input{width:19px;height:19px;accent-color:var(--accent);cursor:pointer}
+  .avatar{
+    flex:none;width:34px;height:34px;border-radius:50%;
+    display:grid;place-items:center;
+    background:#e9f3ed;color:var(--accent-strong);
+    font-size:13px;font-weight:800;letter-spacing:.02em;
+    transition:background .15s,color .15s;
+  }
+  li.attending .avatar{background:var(--accent);color:#fff}
+  li.is-guest .avatar{background:#e8eaff;color:#4338ca}
+  li.is-guest.attending .avatar{background:#5b5bd6;color:#fff}
+  .member-info{flex:1;min-width:0}
+  .member-name{
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    font-size:13.5px;font-weight:700;line-height:1.3;word-break:break-word;
+  }
+  .member-meta{font-size:11px;color:var(--muted);margin-top:1px}
+  .badge{
+    display:inline-flex;align-items:center;flex:none;
+    padding:1px 6px;border-radius:99px;border:1px solid transparent;
+    font-size:10px;font-weight:800;letter-spacing:.02em;
+  }
+  .badge.new{background:var(--amber-bg);color:var(--amber);border-color:var(--amber-line)}
+  .badge.guest{background:#eef0ff;color:#4338ca;border-color:#d9dcf7}
+  .member-actions{display:flex;align-items:center;gap:4px;flex:none}
+  .pill-toggle{
+    border:1px solid var(--line);border-radius:99px;background:#fff;
+    padding:3px 9px;font-size:11px;font-weight:800;color:#8b978f;
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .pill-toggle:hover{border-color:var(--amber-line);color:var(--amber)}
+  .pill-toggle.on{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+  .icon-btn{
+    display:grid;place-items:center;flex:none;
+    width:27px;height:27px;border:0;border-radius:8px;background:transparent;
+    color:#a6b1aa;font-size:16px;line-height:1;
+    transition:background .15s,color .15s;
+  }
+  .icon-btn:hover{background:#fbeceb;color:var(--danger)}
+  .rule-note{font-size:11.5px;color:#8b978f;margin-top:10px}
+  .rule-note::before{content:"＊ ";color:#b3a06a}
+
+  .guest-block{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+  .guest-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .guest-head h3{font-size:13.5px;letter-spacing:-.01em}
+  .guests{margin-top:8px}
+
+  /* Result */
+  .result-card{
+    border-color:#d5e8de;
+    background:
+      radial-gradient(420px 230px at 100% 0%, rgba(14,122,88,.10), transparent 72%),
+      linear-gradient(180deg,#f7fcf9 0%,#fff 48%);
+  }
+  .result-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}
+  .result-date{font-size:11.5px;font-weight:600;color:var(--muted);text-align:right}
+  .big-number{display:flex;align-items:baseline;gap:5px;margin-top:4px;color:var(--accent-deep);line-height:1}
+  .big-number > span{font-size:18px;font-weight:800;letter-spacing:-.01em}
+  .big-number > b{
+    font-size:clamp(42px,5.4vw,56px);font-weight:800;letter-spacing:-.045em;
+    font-variant-numeric:tabular-nums;
+  }
+  .result-note{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .result-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .meta-chip{
+    display:inline-flex;align-items:center;gap:4px;
+    padding:3px 9px;border:1px solid #dcebe3;border-radius:99px;
+    background:rgba(255,255,255,.82);
+    font-size:11.5px;font-weight:600;color:var(--ink-soft);
+  }
+  .meta-chip b{font-weight:800;font-variant-numeric:tabular-nums}
+  .meta-chip.new{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+
+  .share-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-top:18px;padding-top:14px;border-top:1px solid var(--line);
+  }
+  .share-head h3{font-size:12.5px;letter-spacing:.02em;color:var(--ink-soft)}
+  .search-input{
+    width:110px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;
+    background:#fbfcfa;font-size:11.5px;outline:0;
+  }
+  .search-input:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(14,122,88,.1)}
+  .share-list{margin-top:2px;max-height:300px;overflow:auto;overscroll-behavior:contain}
+  .share-row{display:flex;align-items:center;gap:8px;padding:7px 2px;font-size:13px}
+  .share-row + .share-row{border-top:1px dashed #edf1ed}
+  .mini-avatar{
+    display:grid;place-items:center;flex:none;
+    width:24px;height:24px;border-radius:50%;
+    background:#eaf3ee;color:var(--accent-strong);
+    font-size:10.5px;font-weight:800;
+  }
+  .mini-avatar.guest{background:#e8eaff;color:#4338ca}
+  .share-name{
+    flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    font-weight:600;word-break:break-word;
+  }
+  .share-amt{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .share-row.free .share-amt{
+    padding:1px 7px;border:1px solid var(--amber-line);border-radius:99px;
+    background:var(--amber-bg);color:var(--amber);font-size:11.5px;
+  }
+  .share-empty{padding:16px 2px;text-align:center;font-size:12.5px;color:var(--muted)}
+  .share-total{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:6px;padding-top:9px;border-top:1.5px solid var(--line);
+    font-size:12px;color:var(--muted);
+  }
+  .share-total b{font-size:14.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+
+  .result-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+  .result-actions .btn{padding:11px 12px}
+  .save-hint{min-height:17px;margin-top:8px;text-align:center;font-size:11px;color:var(--muted)}
+  /* History */
+  #historyList{display:grid;gap:7px}
+  .week{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+  .week-toggle{
+    display:flex;align-items:center;gap:10px;width:100%;
+    padding:10px 11px;border:0;background:transparent;text-align:left;
+    transition:background .15s;
+  }
+  .week-toggle:hover{background:#fafcfa}
+  .week-main{display:block;min-width:0}
+  .week-date{display:block;font-size:13px;font-weight:800;letter-spacing:-.01em}
+  .week-sub{display:block;margin-top:1px;font-size:10.5px;color:var(--muted)}
+  .week-amount{display:block;margin-left:auto;text-align:right;flex:none}
+  .week-amount b{display:block;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+  .week-amount span{display:block;margin-top:1px;font-size:10px;color:var(--muted)}
+  .chevron{flex:none;color:#9aa79f;transition:transform .18s}
+  .week.open .chevron{transform:rotate(180deg)}
+  .week-detail{display:none;padding:0 11px 11px;border-top:1px solid var(--line);background:#fbfcfa;font-size:12px}
+  .week.open .week-detail{display:block}
+  .week-fees{padding:9px 0;font-size:11.5px;color:var(--muted)}
+  .week-shares{display:grid;gap:2px;max-height:190px;overflow:auto}
+  .week-share{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px}
+  .week-share .amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .week-share.free .amt{color:var(--amber)}
+  .week-actions{display:flex;gap:8px;margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
+  .week-actions .btn{padding:6px 11px;border-radius:8px;font-size:11.5px}
+  .history-empty{
+    padding:22px 10px;border:1.5px dashed var(--line-strong);border-radius:12px;
+    text-align:center;font-size:12.5px;color:var(--muted);
   }
 
-  .card {
-    position: relative;
-    width: min(560px, 100%);
-    padding: 48px 40px 40px;
-    border-radius: 28px;
-    text-align: center;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-    animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  .site-footer{padding:0 0 34px;text-align:center;font-size:11.5px;color:#94a199}
+
+  /* Mobile summary bar */
+  .mobile-bar{display:none}
+  .toast{
+    position:fixed;left:50%;bottom:24px;z-index:100;
+    max-width:calc(100vw - 40px);padding:9px 16px;border-radius:11px;
+    background:#16211b;color:#fff;
+    font-size:12.5px;font-weight:600;text-align:center;
+    opacity:0;pointer-events:none;transform:translate(-50%,16px);
+    box-shadow:0 12px 30px -8px rgba(0,0,0,.4);
+    transition:opacity .2s,transform .2s;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:920px){
+    body{padding-bottom:92px}
+    .layout{grid-template-columns:1fr;grid-template-areas:"main" "result" "history"}
+    .mobile-bar{
+      display:flex;align-items:center;gap:12px;
+      position:fixed;left:12px;right:12px;bottom:12px;z-index:40;
+      padding:10px 12px 10px 15px;border-radius:15px;
+      background:linear-gradient(150deg,#0e6b4e,#084b37);
+      color:#fff;box-shadow:0 14px 34px -10px rgba(6,40,29,.65);
+    }
+    .mb-info{min-width:0}
+    .mb-info span{display:block;font-size:10.5px;line-height:1.2;opacity:.72}
+    .mb-info b{
+      display:block;font-size:19px;font-weight:800;line-height:1.25;
+      letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+    }
+    .mobile-bar .btn{
+      margin-left:auto;padding:8px 12px;font-size:12px;
+      background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);color:#fff;
+    }
+    .mobile-bar .btn:hover{background:rgba(255,255,255,.22)}
+    .toast{bottom:92px}
   }
 
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
+  @media (max-width:600px){
+    .wrap{width:calc(100% - 24px)}
+    .card{padding:17px;border-radius:16px}
+    .header-inner{padding:10px 0}
+    .brand p{display:none}
+    .brand h1{font-size:17px}
+    .logo{width:38px;height:38px;border-radius:12px}
+    .logo svg{width:23px;height:23px}
+    .result-actions{grid-template-columns:1fr}
+    .fee-summary .grand{width:100%;margin-left:0;padding-top:7px;border-top:1px dashed #dbe8e0}
+    .result-date{font-size:10.5px}
+    .week-amount span{display:none}
+    .pill-toggle{padding:3px 7px}
+    .text-input,.date-field input,.search-input{font-size:16px}
   }
 
-  .label {
-    font-size: 13px;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .day {
-    margin: 18px 0 6px;
-    font-size: clamp(64px, 16vw, 112px);
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: 0.04em;
-    background: linear-gradient(120deg, #fff 10%, var(--accent-2) 55%, var(--accent) 95%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    filter: drop-shadow(0 6px 24px rgba(124, 92, 255, 0.45));
-  }
-
-  .date {
-    font-size: 18px;
-    color: var(--muted);
-    letter-spacing: 0.08em;
-  }
-
-  .clock {
-    margin-top: 8px;
-    font-variant-numeric: tabular-nums;
-    font-size: 15px;
-    color: var(--muted);
-  }
-
-  .week {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin-top: 36px;
-  }
-
-  .week span {
-    display: grid;
-    place-items: center;
-    height: 44px;
-    border-radius: 12px;
-    font-size: 14px;
-    color: var(--muted);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid transparent;
-    transition: transform 0.25s, background 0.25s;
-  }
-
-  .week span.today {
-    color: #0b0b14;
-    font-weight: 700;
-    background: linear-gradient(135deg, var(--accent-2), var(--accent));
-    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.5);
-    transform: translateY(-3px);
-  }
-
-  .countdown {
-    margin-top: 32px;
-    padding-top: 26px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .countdown-label {
-    font-size: 12px;
-    letter-spacing: 0.22em;
-    color: var(--muted);
-  }
-
-  .countdown-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-top: 14px;
-  }
-
-  .unit {
-    padding: 12px 4px 10px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .unit b {
-    display: block;
-    font-size: clamp(22px, 5.5vw, 30px);
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-    color: #fff;
-  }
-
-  .unit small {
-    display: block;
-    margin-top: 4px;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: var(--muted);
-  }
-
-  .footer {
-    margin-top: 28px;
-    font-size: 12px;
-    color: rgba(245, 243, 255, 0.35);
-  }
-
-  @media (max-width: 420px) {
-    .card { padding: 36px 22px 30px; border-radius: 22px; }
-    .week { gap: 6px; }
-    .week span { height: 40px; font-size: 12px; }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;animation:none !important;scroll-behavior:auto !important}
   }
 </style>
 </head>
 <body>
-  <div class="orb one"></div>
-  <div class="orb two"></div>
-
-  <main class="card">
-    <p class="label">Today is</p>
-    <h1 class="day" id="day">—</h1>
-    <p class="date" id="date"></p>
-    <p class="clock" id="clock"></p>
-
-    <div class="week" id="week"></div>
-
-    <section class="countdown">
-      <p class="countdown-label" id="countdown-label">距離明年 1 月 1 日還有</p>
-      <div class="countdown-grid">
-        <div class="unit"><b id="cd-days">0</b><small>天</small></div>
-        <div class="unit"><b id="cd-hours">0</b><small>小時</small></div>
-        <div class="unit"><b id="cd-minutes">0</b><small>分</small></div>
-        <div class="unit"><b id="cd-seconds">0</b><small>秒</small></div>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="24" r="5.4" fill="#fff"/>
+          <path d="M12.4 20.2 7.3 7.1M16 19.6V5.4M19.6 20.2l5.1-13.1M9.5 18.4 3.8 11.2M22.5 18.4l5.7-7.2" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity=".82"/>
+          <path d="M12.4 20.2c1.1 1 2.4 1.5 3.6 1.5s2.5-.5 3.6-1.5" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
       </div>
+      <div>
+        <h1>羽球分攤</h1>
+        <p>填這週總數，馬上知道每人付多少</p>
+      </div>
+    </div>
+    <button type="button" class="btn ghost" id="clearWeekBtn">清空本週</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="warn" id="storageWarn" hidden>這個瀏覽器無法使用本機儲存，關閉頁面後資料會消失。</div>
+</div>
+
+<main class="wrap">
+  <div class="layout">
+    <div class="col-main">
+
+      <section class="card">
+        <div class="card-head">
+          <h2>1. 這週的費用</h2>
+          <span class="hint">不用記流水帳，填總數就好</span>
+        </div>
+        <div class="date-row">
+          <label class="field date-field">
+            <span>日期</span>
+            <input type="date" id="weekDate">
+          </label>
+          <span class="date-note" id="dateNote"></span>
+        </div>
+        <div class="fee-grid">
+          <label class="field">
+            <span>場地費總額</span>
+            <div class="input-wrap">
+              <span class="prefix">NT$</span>
+              <input type="number" id="courtFee" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off">
+            </div>
+          </label>
+          <label class="field">
+            <span>用球數</span>
+            <div class="input-wrap">
+              <input type="number" id="shuttleCount" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off">
+              <span class="suffix">顆</span>
+            </div>
+          </label>
+          <label class="field">
+            <span>每顆球單價</span>
+            <div class="input-wrap">
+              <span class="prefix">NT$</span>
+              <input type="number" id="shuttlePrice" min="0" step="1" inputmode="numeric" placeholder="0" autocomplete="off">
+            </div>
+          </label>
+        </div>
+        <div class="fee-summary" aria-live="polite">
+          <span>場地 <b id="courtFeeView">NT$0</b></span>
+          <span class="equal">＋</span>
+          <span>球費 <b id="shuttleFeeView">NT$0</b> <em id="shuttleCalcView"></em></span>
+          <span class="equal">＝</span>
+          <span class="grand">總額 <b id="totalView">NT$0</b></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>2. 誰來打？</h2>
+          <span class="hint" id="attendeeCountHint">尚未選人</span>
+        </div>
+        <form class="add-row" id="addMemberForm">
+          <input type="text" id="memberNameInput" class="text-input" placeholder="輸入名字，可用逗號一次加多人" maxlength="80" autocomplete="off">
+          <label class="check-inline">
+            <input type="checkbox" id="memberIsNew">
+            <span>新人（第一次，本週免費）</span>
+          </label>
+          <button type="submit" class="btn secondary">加入社員</button>
+        </form>
+        <p class="empty" id="rosterEmpty">還沒有社員。先把固定班底加進來，之後每週只要打勾。</p>
+        <ul class="roster" id="rosterList"></ul>
+        <p class="rule-note">新人第一次參加免費，少付的差額由其他出席者平分。</p>
+
+        <div class="guest-block">
+          <div class="guest-head">
+            <h3>臨時訪客</h3>
+            <span class="hint">只記這次，不會加入社員名單</span>
+          </div>
+          <form class="add-row" id="addGuestForm">
+            <input type="text" id="guestNameInput" class="text-input" placeholder="訪客名字，可用逗號加多人" maxlength="80" autocomplete="off">
+            <label class="check-inline">
+              <input type="checkbox" id="guestFree" checked>
+              <span>新人免費</span>
+            </label>
+            <button type="submit" class="btn secondary">加入訪客</button>
+          </form>
+          <ul class="roster guests" id="guestList"></ul>
+        </div>
+      </section>
+
+    </div>
+    <section class="card result-card" id="resultCard">
+      <div class="result-head">
+        <h2 class="eyebrow">這週每人應付</h2>
+        <span class="result-date" id="resultDate"></span>
+      </div>
+      <div class="big-number"><span>NT$</span><b id="perPersonView">—</b></div>
+      <p class="result-note" id="perPersonNote">先勾選這週出席的人</p>
+      <div class="result-meta" id="resultMeta"></div>
+
+      <div class="share-head">
+        <h3>每人明細</h3>
+        <input type="search" id="shareSearch" class="search-input" placeholder="找名字" autocomplete="off" aria-label="搜尋名字">
+      </div>
+      <div class="share-list" id="shareList"></div>
+      <div class="share-total" id="shareTotal" hidden><span>合計</span><b>NT$0</b></div>
+
+      <div class="result-actions">
+        <button type="button" class="btn primary" id="saveBtn">儲存這週</button>
+        <button type="button" class="btn secondary" id="copyBtn">複製結果</button>
+      </div>
+      <p class="save-hint" id="saveHint"></p>
     </section>
 
-    <p class="footer">即時更新</p>
-  </main>
+    <section class="card history-card">
+      <div class="card-head">
+        <h2>歷史紀錄</h2>
+        <span class="hint" id="historyStats"></span>
+      </div>
+      <div id="historyList"></div>
+    </section>
 
-  <script>
-    const DAY_NAMES = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
-    const SHORT_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
+  </div>
+</main>
 
-    const dayEl = document.getElementById("day");
-    const dateEl = document.getElementById("date");
-    const clockEl = document.getElementById("clock");
-    const weekEl = document.getElementById("week");
+<footer class="wrap site-footer">
+  <p>資料只存在這台裝置的瀏覽器裡。換裝置或清除網站資料後，紀錄不會跟著走。</p>
+</footer>
 
-    const countdownLabelEl = document.getElementById("countdown-label");
-    const cdDays = document.getElementById("cd-days");
-    const cdHours = document.getElementById("cd-hours");
-    const cdMinutes = document.getElementById("cd-minutes");
-    const cdSeconds = document.getElementById("cd-seconds");
+<div class="mobile-bar" id="mobileBar">
+  <div class="mb-info">
+    <span id="mbLabel">尚未選出席者</span>
+    <b id="mbAmount">NT$—</b>
+  </div>
+  <button type="button" class="btn" id="mbDetailBtn">看明細</button>
+</div>
 
-    // 建立一週的格子（週日 → 週六）
-    SHORT_NAMES.forEach((name) => {
-      const cell = document.createElement("span");
-      cell.textContent = name;
-      weekEl.appendChild(cell);
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<noscript><div class="wrap warn">這個頁面需要開啟 JavaScript 才能計算。</div></noscript>
+<script>
+(function () {
+  'use strict';
+
+  const STORAGE_KEY = 'badminton-split.v1';
+  const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+  const moneyFmt = new Intl.NumberFormat('zh-TW', { maximumFractionDigits: 0 });
+
+  let storageOK = true;
+  let shareFilter = '';
+  let toastTimer = null;
+  const openWeeks = new Set();
+
+  const state = loadState();
+
+  function $(id) {
+    return document.getElementById(id);
+  }
+
+  function loadState() {
+    let raw = null;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (err) {
+      storageOK = false;
+      return normalizeState({});
+    }
+    if (!raw) return normalizeState({});
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeState(parsed && typeof parsed === 'object' ? parsed : {});
+    } catch (err) {
+      return normalizeState({});
+    }
+  }
+
+  function defaultDraft() {
+    return {
+      date: todayISO(),
+      courtFee: '',
+      shuttleCount: '',
+      shuttlePrice: '',
+      attending: [],
+      guests: []
+    };
+  }
+
+  function normalizeState(raw) {
+    const src = raw && typeof raw === 'object' ? raw : {};
+    const draftSrc = src.draft && typeof src.draft === 'object' ? src.draft : {};
+
+    const members = Array.isArray(src.members) ? src.members
+      .filter(function (m) { return m && typeof m.name === 'string' && m.name.trim(); })
+      .map(function (m) {
+        return {
+          id: m.id || uid(),
+          name: String(m.name).trim().slice(0, 20),
+          isNew: !!m.isNew,
+          createdAt: Number(m.createdAt) || Date.now()
+        };
+      }) : [];
+
+    const weeks = Array.isArray(src.weeks) ? src.weeks
+      .filter(function (w) { return w && typeof w.date === 'string'; })
+      .map(function (w) {
+        const attendees = Array.isArray(w.attendees) ? w.attendees.map(function (a) {
+          return {
+            memberId: a && a.memberId ? a.memberId : null,
+            name: a && a.name ? String(a.name).slice(0, 20) : '未命名',
+            isGuest: !!(a && a.isGuest),
+            free: !!(a && a.free),
+            amount: num(a && a.amount)
+          };
+        }) : [];
+        return {
+          id: w.id || uid(),
+          date: w.date,
+          courtFee: num(w.courtFee),
+          shuttleCount: num(w.shuttleCount),
+          shuttlePrice: num(w.shuttlePrice),
+          shuttleFee: num(w.shuttleFee),
+          total: num(w.total),
+          attendees: attendees,
+          payingCount: Number.isFinite(Number(w.payingCount)) ? Number(w.payingCount) : attendees.filter(function (a) { return !a.free; }).length,
+          freeCount: Number.isFinite(Number(w.freeCount)) ? Number(w.freeCount) : attendees.filter(function (a) { return a.free; }).length,
+          createdAt: typeof w.createdAt === 'string' ? w.createdAt : ''
+        };
+      }) : [];
+
+    const memberIds = new Set(members.map(function (m) { return m.id; }));
+    const attending = Array.isArray(draftSrc.attending)
+      ? draftSrc.attending.filter(function (id) { return memberIds.has(id); })
+      : [];
+
+    const guests = Array.isArray(draftSrc.guests) ? draftSrc.guests
+      .filter(function (g) { return g && typeof g.name === 'string' && g.name.trim(); })
+      .map(function (g) {
+        return {
+          id: g.id || uid(),
+          name: String(g.name).trim().slice(0, 20),
+          free: !!g.free
+        };
+      }) : [];
+
+    return {
+      version: 1,
+      members: members,
+      weeks: weeks,
+      draft: {
+        date: typeof draftSrc.date === 'string' && parseISODate(draftSrc.date) ? draftSrc.date : todayISO(),
+        courtFee: toInputString(draftSrc.courtFee),
+        shuttleCount: toInputString(draftSrc.shuttleCount),
+        shuttlePrice: toInputString(draftSrc.shuttlePrice),
+        attending: attending,
+        guests: guests
+      }
+    };
+  }
+
+  function toInputString(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const n = Number(value);
+    return Number.isFinite(n) ? String(n) : '';
+  }
+
+  function persist() {
+    if (!storageOK) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      storageOK = false;
+      const warn = $('storageWarn');
+      if (warn) warn.hidden = false;
+      toast('無法儲存資料，這次的內容關閉後會消失');
+    }
+  }
+
+  function uid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+      return window.crypto.randomUUID();
+    }
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
+  }
+
+  function pad(n) {
+    return n < 10 ? '0' + n : String(n);
+  }
+
+  function todayISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function parseISODate(iso) {
+    if (typeof iso !== 'string') return null;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return null;
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  function formatDate(iso, full) {
+    const d = parseISODate(iso);
+    if (!d) return '';
+    const base = (d.getMonth() + 1) + '/' + d.getDate() + '（' + WEEKDAYS[d.getDay()] + '）';
+    return full ? d.getFullYear() + '/' + base : base;
+  }
+
+  function num(value) {
+    const n = typeof value === 'number' ? value : parseFloat(value);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function fmtQty(n) {
+    const v = Number(n) || 0;
+    return Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100);
+  }
+
+  function money(n) {
+    return 'NT$' + moneyFmt.format(Math.round(Number(n) || 0));
+  }
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+    });
+  }
+
+  function initial(name) {
+    const text = String(name).trim();
+    if (!text) return '?';
+    return Array.from(text)[0].toUpperCase();
+  }
+
+  function splitNames(raw) {
+    return String(raw).split(/[,，、;；\n\r]+/).map(function (s) {
+      return s.trim();
+    }).filter(Boolean).slice(0, 30);
+  }
+
+  function toast(message) {
+    const el = $('toast');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      el.classList.remove('show');
+    }, 2300);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast('已複製，可以貼到群組了');
+      }).catch(function () {
+        legacyCopy(text);
+      });
+      return;
+    }
+    legacyCopy(text);
+  }
+
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    ta.remove();
+    toast(ok ? '已複製，可以貼到群組了' : '複製失敗，請手動選取');
+  }
+  function readFeeInputs() {
+    state.draft.date = $('weekDate').value || todayISO();
+    state.draft.courtFee = $('courtFee').value;
+    state.draft.shuttleCount = $('shuttleCount').value;
+    state.draft.shuttlePrice = $('shuttlePrice').value;
+  }
+
+  function syncFeeInputs() {
+    $('weekDate').value = state.draft.date || todayISO();
+    $('courtFee').value = state.draft.courtFee || '';
+    $('shuttleCount').value = state.draft.shuttleCount || '';
+    $('shuttlePrice').value = state.draft.shuttlePrice || '';
+    renderDateNote();
+  }
+
+  function renderDateNote() {
+    const iso = $('weekDate').value;
+    $('dateNote').textContent = iso ? formatDate(iso, true) : '未設定日期';
+  }
+
+  function compute() {
+    const court = Math.round(num(state.draft.courtFee));
+    const count = num(state.draft.shuttleCount);
+    const price = num(state.draft.shuttlePrice);
+    const shuttleFee = Math.round(count * price);
+    const total = court + shuttleFee;
+
+    const attendees = [];
+    state.members.forEach(function (m) {
+      if (state.draft.attending.indexOf(m.id) === -1) return;
+      attendees.push({
+        key: 'm:' + m.id,
+        memberId: m.id,
+        name: m.name,
+        isGuest: false,
+        free: !!m.isNew,
+        amount: 0
+      });
+    });
+    state.draft.guests.forEach(function (g) {
+      attendees.push({
+        key: 'g:' + g.id,
+        memberId: null,
+        name: g.name,
+        isGuest: true,
+        free: !!g.free,
+        amount: 0
+      });
     });
 
-    function pad(n) {
-      return String(n).padStart(2, "0");
-    }
+    const paying = attendees.filter(function (a) { return !a.free; });
+    const n = paying.length;
 
-    function render() {
-      const now = new Date();
-      const weekday = now.getDay();
-
-      dayEl.textContent = DAY_NAMES[weekday];
-
-      dateEl.textContent =
-        `${now.getFullYear()} 年 ${now.getMonth() + 1} 月 ${now.getDate()} 日`;
-
-      clockEl.textContent =
-        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-
-      [...weekEl.children].forEach((cell, index) => {
-        cell.classList.toggle("today", index === weekday);
+    if (n > 0) {
+      const base = Math.floor(total / n);
+      const remainder = total - base * n;
+      let index = 0;
+      attendees.forEach(function (a) {
+        if (a.free) return;
+        a.amount = base + (index < remainder ? 1 : 0);
+        index++;
       });
-
-      renderCountdown(now);
     }
 
-    function renderCountdown(now) {
-      // 下一個 1 月 1 日 00:00:00
-      const target = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
-      let remaining = Math.max(0, target - now);
-
-      const days = Math.floor(remaining / 86400000);
-      remaining -= days * 86400000;
-      const hours = Math.floor(remaining / 3600000);
-      remaining -= hours * 3600000;
-      const minutes = Math.floor(remaining / 60000);
-      remaining -= minutes * 60000;
-      const seconds = Math.floor(remaining / 1000);
-
-      countdownLabelEl.textContent = remaining <= 0 && target - now <= 0
-        ? `新年快樂！${target.getFullYear()} 年`
-        : `距離 ${target.getFullYear()} 年 1 月 1 日還有`;
-
-      cdDays.textContent = days;
-      cdHours.textContent = pad(hours);
-      cdMinutes.textContent = pad(minutes);
-      cdSeconds.textContent = pad(seconds);
+    let min = 0;
+    let max = 0;
+    if (n > 0) {
+      const amounts = paying.map(function (a) { return a.amount; });
+      min = Math.min.apply(null, amounts);
+      max = Math.max.apply(null, amounts);
     }
 
-    // 對齊到下一個整秒再更新，避免計時器累積漂移
-    function tick() {
-      render();
-      const delay = 1000 - (Date.now() % 1000);
-      setTimeout(tick, delay);
+    return {
+      court: court,
+      count: count,
+      price: price,
+      shuttleFee: shuttleFee,
+      total: total,
+      shares: attendees,
+      payingCount: n,
+      freeCount: attendees.length - n,
+      min: min,
+      max: max
+    };
+  }
+
+  function memberVisits(memberId) {
+    return state.weeks.reduce(function (total, week) {
+      const hit = (week.attendees || []).some(function (a) {
+        return a.memberId === memberId;
+      });
+      return total + (hit ? 1 : 0);
+    }, 0);
+  }
+
+  function renderRoster() {
+    const list = $('rosterList');
+    const empty = $('rosterEmpty');
+    empty.hidden = state.members.length > 0;
+
+    if (!state.members.length) {
+      list.innerHTML = '';
+      return;
     }
 
-    tick();
-  </script>
+    list.innerHTML = state.members.map(function (m) {
+      const checked = state.draft.attending.indexOf(m.id) !== -1;
+      const visits = memberVisits(m.id);
+      const meta = visits > 0
+        ? '參加 ' + visits + ' 次'
+        : (m.isNew ? '第一次參加' : '還沒有出席紀錄');
+
+      return '<li class="' + (checked ? 'attending' : '') + '" data-member="' + m.id + '">' +
+        '<label class="member-check" title="這週出席">' +
+          '<input type="checkbox" data-attend="' + m.id + '"' + (checked ? ' checked' : '') +
+            ' aria-label="這週出席：' + esc(m.name) + '">' +
+        '</label>' +
+        '<span class="avatar" aria-hidden="true">' + esc(initial(m.name)) + '</span>' +
+        '<div class="member-info">' +
+          '<div class="member-name">' + esc(m.name) +
+            (m.isNew ? '<span class="badge new">新人免費</span>' : '') +
+          '</div>' +
+          '<div class="member-meta">' + meta + '</div>' +
+        '</div>' +
+        '<div class="member-actions">' +
+          '<button type="button" class="pill-toggle ' + (m.isNew ? 'on' : '') + '" ' +
+            'data-action="toggle-new" data-id="' + m.id + '" ' +
+            'title="' + (m.isNew ? '取消新人資格' : '標記為新人（本週免費）') + '">新人</button>' +
+          '<button type="button" class="icon-btn" data-action="delete-member" data-id="' + m.id + '" ' +
+            'title="刪除社員" aria-label="刪除社員 ' + esc(m.name) + '">×</button>' +
+        '</div>' +
+      '</li>';
+    }).join('');
+  }
+
+  function renderGuests() {
+    const list = $('guestList');
+    list.innerHTML = state.draft.guests.map(function (g) {
+      return '<li class="is-guest attending" data-guest="' + g.id + '">' +
+        '<span class="avatar" aria-hidden="true">' + esc(initial(g.name)) + '</span>' +
+        '<div class="member-info">' +
+          '<div class="member-name">' + esc(g.name) + '<span class="badge guest">訪客</span></div>' +
+          '<div class="member-meta">' + (g.free ? '新人免費，由其他人平分' : '需分攤這週費用') + '</div>' +
+        '</div>' +
+        '<div class="member-actions">' +
+          '<button type="button" class="pill-toggle ' + (g.free ? 'on' : '') + '" ' +
+            'data-guest-action="toggle-free" data-id="' + g.id + '" ' +
+            'title="切換免費 / 收費">' + (g.free ? '免費' : '收費') + '</button>' +
+          '<button type="button" class="icon-btn" data-guest-action="delete" data-id="' + g.id + '" ' +
+            'title="移除訪客" aria-label="移除訪客 ' + esc(g.name) + '">×</button>' +
+        '</div>' +
+      '</li>';
+    }).join('');
+  }
+
+  function renderFeeSummary(comp) {
+    $('courtFeeView').textContent = money(comp.court);
+    $('shuttleFeeView').textContent = money(comp.shuttleFee);
+    $('totalView').textContent = money(comp.total);
+    $('shuttleCalcView').textContent = comp.count > 0
+      ? fmtQty(comp.count) + ' 顆 × ' + money(comp.price)
+      : '';
+  }
+
+  function updateAttendeeHint(comp) {
+    if (!comp.shares.length) {
+      $('attendeeCountHint').textContent = '尚未選人';
+      return;
+    }
+    $('attendeeCountHint').textContent = '已選 ' + comp.shares.length + ' 人' +
+      (comp.freeCount > 0 ? ' · 新人 ' + comp.freeCount : '');
+  }
+
+  function renderMobileBar(comp) {
+    const label = $('mbLabel');
+    const amount = $('mbAmount');
+
+    if (!comp.shares.length) {
+      label.textContent = '尚未選出席者';
+      amount.textContent = 'NT$—';
+      return;
+    }
+    if (comp.payingCount === 0) {
+      label.textContent = comp.shares.length + ' 位新人';
+      amount.textContent = '本週免費';
+      return;
+    }
+
+    label.textContent = comp.payingCount + ' 人分攤' +
+      (comp.freeCount > 0 ? ' · 新人 ' + comp.freeCount + ' 免費' : '');
+    amount.textContent = comp.min === comp.max
+      ? money(comp.max)
+      : money(comp.min) + '–' + money(comp.max);
+  }
+
+  function updateComputed() {
+    const comp = compute();
+    renderFeeSummary(comp);
+    renderResult(comp);
+    renderMobileBar(comp);
+    updateAttendeeHint(comp);
+
+    const empty = comp.shares.length === 0;
+    $('saveBtn').disabled = empty;
+    $('copyBtn').disabled = empty;
+  }
+  function renderResult(comp) {
+    $('resultDate').textContent = state.draft.date ? formatDate(state.draft.date) : '';
+
+    const per = $('perPersonView');
+    const note = $('perPersonNote');
+
+    if (!comp.shares.length) {
+      per.textContent = '—';
+      note.textContent = '先勾選這週出席的人';
+    } else if (comp.payingCount === 0) {
+      per.textContent = '0';
+      note.textContent = '全部都是新人，本週不用分攤';
+    } else {
+      per.textContent = comp.min === comp.max
+        ? moneyFmt.format(comp.max)
+        : moneyFmt.format(comp.min) + '–' + moneyFmt.format(comp.max);
+
+      let text;
+      if (comp.total === 0) {
+        text = '這週沒有費用';
+      } else if (comp.freeCount > 0) {
+        text = '新人 ' + comp.freeCount + ' 位免費，差額由其他 ' + comp.payingCount + ' 人平分';
+      } else {
+        text = '由 ' + comp.payingCount + ' 人平分';
+      }
+      if (comp.total > 0 && comp.min !== comp.max) text += '｜尾數已分配';
+      note.textContent = text;
+    }
+
+    const chips = [];
+    chips.push('<span class="meta-chip">總額 <b>' + money(comp.total) + '</b></span>');
+    chips.push('<span class="meta-chip">出席 <b>' + comp.shares.length + '</b> 人</span>');
+    if (comp.freeCount > 0) {
+      chips.push('<span class="meta-chip new">新人 <b>' + comp.freeCount + '</b> 位免費</span>');
+    }
+    $('resultMeta').innerHTML = chips.join('');
+
+    const list = $('shareList');
+    if (!comp.shares.length) {
+      list.innerHTML = '<div class="share-empty">選了出席者後，這裡會列出每個人的金額。</div>';
+      $('shareTotal').hidden = true;
+      return;
+    }
+
+    list.innerHTML = comp.shares.map(function (s) {
+      return '<div class="share-row ' + (s.free ? 'free' : '') + '" data-name="' + esc(s.name.toLowerCase()) + '">' +
+        '<span class="mini-avatar ' + (s.isGuest ? 'guest' : '') + '">' + esc(initial(s.name)) + '</span>' +
+        '<span class="share-name">' + esc(s.name) +
+          (s.isGuest ? '<span class="badge guest">訪客</span>' : '') +
+          (s.free ? '<span class="badge new">新人</span>' : '') +
+        '</span>' +
+        '<span class="share-amt">' + (s.free ? '免費' : money(s.amount)) + '</span>' +
+      '</div>';
+    }).join('');
+
+    $('shareTotal').hidden = false;
+    $('shareTotal').querySelector('b').textContent = money(comp.total);
+    applyShareFilter();
+  }
+
+  function applyShareFilter() {
+    const rows = $('shareList').querySelectorAll('.share-row');
+    rows.forEach(function (row) {
+      row.hidden = !!shareFilter && row.dataset.name.indexOf(shareFilter) === -1;
+    });
+  }
+
+  function latestWeek() {
+    let latest = null;
+    state.weeks.forEach(function (w) {
+      if (!latest) { latest = w; return; }
+      const a = (w.createdAt || '') + '|' + (w.date || '');
+      const b = (latest.createdAt || '') + '|' + (latest.date || '');
+      if (a > b) latest = w;
+    });
+    return latest;
+  }
+
+  function renderSaveHint() {
+    const w = latestWeek();
+    $('saveHint').textContent = w
+      ? '上次儲存：' + formatDate(w.date, true) + ' · ' + money(w.total)
+      : '儲存後會保留在歷史紀錄';
+  }
+
+  function renderHistory() {
+    const weeks = state.weeks.slice().sort(function (a, b) {
+      const byDate = String(b.date || '').localeCompare(String(a.date || ''));
+      if (byDate !== 0) return byDate;
+      return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+    });
+
+    if (!weeks.length) {
+      $('historyStats').textContent = '';
+      $('historyList').innerHTML = '<div class="history-empty">還沒有紀錄。<br>儲存這週之後，就能回頭查每次的金額。</div>';
+      return;
+    }
+
+    const sum = weeks.reduce(function (total, w) { return total + (Number(w.total) || 0); }, 0);
+    $('historyStats').textContent = '共 ' + weeks.length + ' 週 · 累計 ' + money(sum);
+
+    $('historyList').innerHTML = weeks.map(function (w) {
+      const shares = w.attendees || [];
+      const paying = shares.filter(function (s) { return !s.free; });
+      const amounts = paying.map(function (s) { return s.amount; });
+      const min = amounts.length ? Math.min.apply(null, amounts) : 0;
+      const max = amounts.length ? Math.max.apply(null, amounts) : 0;
+      const per = !amounts.length ? '全員免費' : (min === max ? money(max) : money(min) + '–' + money(max));
+      const open = openWeeks.has(w.id);
+
+      let fees = '場地 ' + money(w.courtFee);
+      if (w.shuttleCount > 0) {
+        fees += ' ＋ 球 ' + fmtQty(w.shuttleCount) + ' 顆 × ' + money(w.shuttlePrice) + ' = ' + money(w.shuttleFee);
+      } else if (w.shuttleFee > 0) {
+        fees += ' ＋ 球費 ' + money(w.shuttleFee);
+      } else {
+        fees += ' ＋ 無球費';
+      }
+
+      const sub = shares.length + ' 人' +
+        (w.freeCount > 0 ? ' · 新人 ' + w.freeCount + ' 免費' : '');
+
+      return '<div class="week ' + (open ? 'open' : '') + '" data-week="' + w.id + '">' +
+        '<button type="button" class="week-toggle" data-week-toggle="' + w.id + '" aria-expanded="' + open + '">' +
+          '<span class="week-main">' +
+            '<span class="week-date">' + esc(formatDate(w.date, true)) + '</span>' +
+            '<span class="week-sub">' + sub + '</span>' +
+          '</span>' +
+          '<span class="week-amount"><b>' + money(w.total) + '</b><span>每人 ' + per + '</span></span>' +
+          '<svg class="chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">' +
+            '<path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</svg>' +
+        '</button>' +
+        '<div class="week-detail">' +
+          '<div class="week-fees">' + fees + '</div>' +
+          '<div class="week-shares">' +
+            shares.map(function (s) {
+              return '<div class="week-share ' + (s.free ? 'free' : '') + '">' +
+                '<span>' + esc(s.name) + (s.isGuest ? '（訪客）' : '') + '</span>' +
+                '<span class="amt">' + (s.free ? '免費' : money(s.amount)) + '</span>' +
+              '</div>';
+            }).join('') +
+          '</div>' +
+          '<div class="week-actions">' +
+            '<button type="button" class="btn secondary" data-week-copy="' + w.id + '">複製</button>' +
+            '<button type="button" class="btn danger" data-week-delete="' + w.id + '">刪除</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function weekToComp(w) {
+    const shares = (w.attendees || []).map(function (s, index) {
+      return {
+        key: s.memberId ? 'm:' + s.memberId : 'g:' + index,
+        memberId: s.memberId,
+        name: s.name,
+        isGuest: s.isGuest,
+        free: s.free,
+        amount: s.amount
+      };
+    });
+    const paying = shares.filter(function (s) { return !s.free; });
+    const amounts = paying.map(function (s) { return s.amount; });
+
+    return {
+      date: w.date,
+      courtFee: w.courtFee,
+      shuttleCount: w.shuttleCount,
+      shuttlePrice: w.shuttlePrice,
+      shuttleFee: w.shuttleFee,
+      total: w.total,
+      shares: shares,
+      payingCount: w.payingCount,
+      freeCount: w.freeCount,
+      min: amounts.length ? Math.min.apply(null, amounts) : 0,
+      max: amounts.length ? Math.max.apply(null, amounts) : 0
+    };
+  }
+
+  function perText(comp) {
+    if (!comp.payingCount) return '免費';
+    return comp.min === comp.max ? money(comp.max) : money(comp.min) + '–' + money(comp.max);
+  }
+
+  function buildText(comp) {
+    const lines = [];
+    lines.push(('🏸 羽球分攤 ' + (comp.date ? formatDate(comp.date) : '')).trim());
+    if (comp.courtFee > 0) lines.push('場地費 ' + money(comp.courtFee));
+    if (comp.shuttleCount > 0 || comp.shuttleFee > 0) {
+      lines.push('球費 ' + fmtQty(comp.shuttleCount) + ' 顆 × ' + money(comp.shuttlePrice) + ' = ' + money(comp.shuttleFee));
+    }
+    lines.push('總額 ' + money(comp.total) + '｜出席 ' + comp.shares.length + ' 人');
+    if (comp.freeCount > 0) {
+      lines.push(comp.payingCount === 0
+        ? '本週全部免費'
+        : '新人 ' + comp.freeCount + ' 人免費，差額由其他 ' + comp.payingCount + ' 人平分');
+    }
+    lines.push('每人 ' + perText(comp));
+    lines.push('────────');
+    comp.shares.forEach(function (s) {
+      lines.push(s.name + '：' + (s.free ? '免費（新人）' : money(s.amount)));
+    });
+    lines.push('────────');
+    lines.push('合計 ' + money(comp.total));
+    return lines.join('\n');
+  }
+  function addMembersFromInput(raw, isNew) {
+    const names = splitNames(raw);
+    if (!names.length) {
+      toast('請先輸入名字');
+      return 0;
+    }
+
+    let added = 0;
+    let skipped = 0;
+
+    names.forEach(function (rawName) {
+      const name = rawName.slice(0, 20);
+      const exists = state.members.some(function (m) { return m.name === name; });
+      if (exists) {
+        skipped++;
+        return;
+      }
+      const member = { id: uid(), name: name, isNew: !!isNew, createdAt: Date.now() };
+      state.members.push(member);
+      state.draft.attending.push(member.id);
+      added++;
+    });
+
+    if (added) {
+      persist();
+      renderRoster();
+      updateComputed();
+      toast(skipped
+        ? '加入 ' + added + ' 位，略過 ' + skipped + ' 位同名'
+        : '已加入 ' + added + ' 位社員');
+    } else {
+      toast('名單裡已經有同名社員');
+    }
+    return added;
+  }
+
+  function saveWeek() {
+    readFeeInputs();
+    const comp = compute();
+
+    if (!comp.shares.length) {
+      toast('先勾選這週出席的人');
+      return;
+    }
+
+    const week = {
+      id: uid(),
+      date: state.draft.date || todayISO(),
+      courtFee: comp.court,
+      shuttleCount: comp.count,
+      shuttlePrice: comp.price,
+      shuttleFee: comp.shuttleFee,
+      total: comp.total,
+      attendees: comp.shares.map(function (s) {
+        return {
+          memberId: s.memberId,
+          name: s.name,
+          isGuest: s.isGuest,
+          free: s.free,
+          amount: s.amount
+        };
+      }),
+      payingCount: comp.payingCount,
+      freeCount: comp.freeCount,
+      createdAt: new Date().toISOString()
+    };
+    state.weeks.unshift(week);
+
+    const attendedIds = new Set(comp.shares
+      .filter(function (s) { return s.memberId; })
+      .map(function (s) { return s.memberId; }));
+    state.members.forEach(function (m) {
+      if (attendedIds.has(m.id)) m.isNew = false;
+    });
+
+    state.draft = {
+      date: todayISO(),
+      courtFee: state.draft.courtFee,
+      shuttleCount: '',
+      shuttlePrice: state.draft.shuttlePrice,
+      attending: [],
+      guests: []
+    };
+
+    shareFilter = '';
+    $('shareSearch').value = '';
+    openWeeks.add(week.id);
+
+    persist();
+    syncFeeInputs();
+    renderRoster();
+    renderGuests();
+    updateComputed();
+    renderHistory();
+    renderSaveHint();
+    toast('已儲存這週紀錄，可以開始下一週了');
+  }
+
+  function copyCurrent() {
+    readFeeInputs();
+    const comp = compute();
+    if (!comp.shares.length) {
+      toast('先勾選出席者再複製');
+      return;
+    }
+    comp.date = state.draft.date;
+    copyText(buildText(comp));
+  }
+
+  function clearWeek() {
+    const draft = state.draft;
+    const hasContent = draft.attending.length > 0 || draft.guests.length > 0 ||
+      num(draft.courtFee) > 0 || num(draft.shuttleCount) > 0 || num(draft.shuttlePrice) > 0;
+
+    if (hasContent && !window.confirm('清空這週填的內容？（社員名單和歷史紀錄不會受影響）')) return;
+
+    state.draft = defaultDraft();
+    shareFilter = '';
+    $('shareSearch').value = '';
+    persist();
+    syncFeeInputs();
+    renderRoster();
+    renderGuests();
+    updateComputed();
+    toast('已清空本週內容');
+  }
+
+  function bindEvents() {
+    ['courtFee', 'shuttleCount', 'shuttlePrice'].forEach(function (id) {
+      const input = $(id);
+      input.addEventListener('input', function () {
+        readFeeInputs();
+        persist();
+        updateComputed();
+      });
+      input.addEventListener('blur', function () {
+        const raw = input.value.trim();
+        if (raw === '') return;
+        const n = num(raw);
+        const next = n === 0 ? '' : String(n);
+        if (next !== input.value) {
+          input.value = next;
+          readFeeInputs();
+          persist();
+          updateComputed();
+        }
+      });
+    });
+
+    $('weekDate').addEventListener('change', function () {
+      readFeeInputs();
+      renderDateNote();
+      persist();
+      updateComputed();
+    });
+
+    $('shareSearch').addEventListener('input', function (event) {
+      shareFilter = event.target.value.trim().toLowerCase();
+      applyShareFilter();
+    });
+
+    $('addMemberForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      const input = $('memberNameInput');
+      const added = addMembersFromInput(input.value, $('memberIsNew').checked);
+      if (added) {
+        input.value = '';
+        $('memberIsNew').checked = false;
+      }
+      input.focus();
+    });
+
+    $('addGuestForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+      const input = $('guestNameInput');
+      const names = splitNames(input.value);
+      if (!names.length) {
+        toast('請先輸入訪客名字');
+        return;
+      }
+      const free = $('guestFree').checked;
+      names.forEach(function (name) {
+        state.draft.guests.push({ id: uid(), name: name.slice(0, 20), free: free });
+      });
+      input.value = '';
+      persist();
+      renderGuests();
+      updateComputed();
+      toast('已加入 ' + names.length + ' 位訪客');
+      input.focus();
+    });
+
+    $('rosterList').addEventListener('change', function (event) {
+      const checkbox = event.target.closest('input[data-attend]');
+      if (!checkbox) return;
+      const id = checkbox.dataset.attend;
+      const member = state.members.find(function (m) { return m.id === id; });
+      if (!member) return;
+
+      const index = state.draft.attending.indexOf(id);
+      if (checkbox.checked && index === -1) state.draft.attending.push(id);
+      if (!checkbox.checked && index !== -1) state.draft.attending.splice(index, 1);
+
+      const row = checkbox.closest('li');
+      if (row) row.classList.toggle('attending', checkbox.checked);
+      persist();
+      updateComputed();
+    });
+
+    $('rosterList').addEventListener('click', function (event) {
+      const button = event.target.closest('button');
+
+      if (!button) {
+        if (event.target.closest('input, label')) return;
+        const row = event.target.closest('li[data-member]');
+        if (!row) return;
+        const checkbox = row.querySelector('input[data-attend]');
+        if (!checkbox) return;
+        checkbox.checked = !checkbox.checked;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+        return;
+      }
+
+      const member = state.members.find(function (m) { return m.id === button.dataset.id; });
+      if (!member) return;
+
+      if (button.dataset.action === 'toggle-new') {
+        member.isNew = !member.isNew;
+        persist();
+        renderRoster();
+        updateComputed();
+        return;
+      }
+
+      if (button.dataset.action === 'delete-member') {
+        if (!window.confirm('刪除社員「' + member.name + '」？\n歷史紀錄會保留，但之後不會再出現在名單。')) return;
+        state.members = state.members.filter(function (m) { return m.id !== member.id; });
+        state.draft.attending = state.draft.attending.filter(function (attendId) {
+          return attendId !== member.id;
+        });
+        persist();
+        renderRoster();
+        updateComputed();
+        toast('已刪除 ' + member.name);
+      }
+    });
+
+    $('guestList').addEventListener('click', function (event) {
+      const button = event.target.closest('button');
+      if (!button) return;
+      const guest = state.draft.guests.find(function (g) { return g.id === button.dataset.id; });
+      if (!guest) return;
+
+      if (button.dataset.guestAction === 'toggle-free') {
+        guest.free = !guest.free;
+        persist();
+        renderGuests();
+        updateComputed();
+        return;
+      }
+
+      if (button.dataset.guestAction === 'delete') {
+        state.draft.guests = state.draft.guests.filter(function (g) { return g.id !== guest.id; });
+        persist();
+        renderGuests();
+        updateComputed();
+        toast('已移除訪客 ' + guest.name);
+      }
+    });
+
+    $('historyList').addEventListener('click', function (event) {
+      const toggle = event.target.closest('[data-week-toggle]');
+      if (toggle) {
+        const id = toggle.dataset.weekToggle;
+        if (openWeeks.has(id)) openWeeks.delete(id); else openWeeks.add(id);
+        renderHistory();
+        return;
+      }
+
+      const copyButton = event.target.closest('[data-week-copy]');
+      if (copyButton) {
+        const week = state.weeks.find(function (w) { return w.id === copyButton.dataset.weekCopy; });
+        if (week) copyText(buildText(weekToComp(week)));
+        return;
+      }
+
+      const deleteButton = event.target.closest('[data-week-delete]');
+      if (deleteButton) {
+        const week = state.weeks.find(function (w) { return w.id === deleteButton.dataset.weekDelete; });
+        if (!week) return;
+        if (!window.confirm('刪除 ' + formatDate(week.date, true) + ' 的紀錄？')) return;
+        state.weeks = state.weeks.filter(function (w) { return w.id !== week.id; });
+        openWeeks.delete(week.id);
+        persist();
+        renderHistory();
+        renderSaveHint();
+        toast('已刪除紀錄');
+      }
+    });
+
+    $('saveBtn').addEventListener('click', saveWeek);
+    $('copyBtn').addEventListener('click', copyCurrent);
+    $('clearWeekBtn').addEventListener('click', clearWeek);
+    $('mbDetailBtn').addEventListener('click', function () {
+      $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function init() {
+    if (!storageOK) $('storageWarn').hidden = false;
+    bindEvents();
+    syncFeeInputs();
+    renderRoster();
+    renderGuests();
+    updateComputed();
+    renderHistory();
+    renderSaveHint();
+  }
+
+  init();
+})();
+</script>
 </body>
 </html>
