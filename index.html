@@ -295,6 +295,8 @@
   .save-hint{min-height:17px;margin-top:8px;text-align:center;font-size:11px;color:var(--muted)}
   /* History */
   #historyList{display:grid;gap:7px}
+  .history-tools{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-6px 0 10px}
+  .history-tools .btn{padding:5px 10px;border-radius:8px;font-size:11.5px}
   .week{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
   .week-toggle{
     display:flex;align-items:center;gap:10px;width:100%;
@@ -403,15 +405,6 @@
   .auth-logo svg{width:32px;height:32px;display:block}
   .auth-card h2{font-size:20px;margin-bottom:4px}
   .auth-card .auth-subtitle{font-size:13px;color:var(--muted);margin-bottom:22px}
-  .auth-tabs {
-    display:flex;border:1.5px solid var(--line);border-radius:11px;overflow:hidden;
-    margin-bottom:18px;background:#fafcf9;
-  }
-  .auth-tab {
-    flex:1;padding:8px 0;border:0;background:transparent;font-size:13.5px;font-weight:700;
-    color:var(--muted);cursor:pointer;transition:background .15s,color .15s;
-  }
-  .auth-tab.active{background:var(--accent);color:#fff}
   .auth-form{display:flex;flex-direction:column;gap:12px}
   .auth-form .field{text-align:left}
   .auth-form label{font-size:12.5px;font-weight:700;color:var(--ink-soft)}
@@ -425,6 +418,7 @@
   .auth-footer{margin-top:16px;font-size:11.5px;color:var(--muted)}
 
   /* User badge in header */
+  .header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:none}
   .user-badge {
     display:flex;align-items:center;gap:8px;
     padding:5px 10px;border-radius:99px;
@@ -463,10 +457,13 @@
         <p>填這週總數，馬上知道每人付多少</p>
       </div>
     </div>
-    <div id="userBadge" class="user-badge" hidden>
-      <span class="avatar-sm" id="userAvatar">?</span>
-      <span id="userName">使用者</span>
-      <button type="button" class="btn-logout" id="logoutBtn">登出</button>
+    <div class="header-actions">
+      <button type="button" class="btn ghost" id="clearWeekBtn">清空本週</button>
+      <div id="userBadge" class="user-badge" hidden>
+        <span class="avatar-sm" id="userAvatar">?</span>
+        <span id="userName">使用者</span>
+        <button type="button" class="btn-logout" id="logoutBtn">登出</button>
+      </div>
     </div>
   </div>
 </header>
@@ -575,7 +572,7 @@
       <div class="share-total" id="shareTotal" hidden><span>合計</span><b>NT$0</b></div>
 
       <div class="result-actions">
-        <button type="button" class="btn primary" id="saveBtn">儲存這週</button>
+        <button type="button" class="btn primary" id="saveBtn">計算並儲存</button>
         <button type="button" class="btn secondary" id="copyBtn">複製結果</button>
       </div>
       <p class="save-hint" id="saveHint"></p>
@@ -586,6 +583,10 @@
         <h2>歷史紀錄</h2>
         <span class="hint" id="historyStats"></span>
       </div>
+      <div class="history-tools">
+        <span class="hint">大家記過的每一週</span>
+        <button type="button" class="btn ghost" id="refreshLedgerBtn">重新載入</button>
+      </div>
       <div id="historyList"></div>
     </section>
 
@@ -593,7 +594,7 @@
 </main>
 
 <footer class="wrap site-footer">
-  <p>資料只存在這台裝置的瀏覽器裡。換裝置或清除網站資料後，紀錄不會跟著走。</p>
+  <p>資料同步到雲端，所有社員看到的都是同一份帳。換裝置也不會遺失。</p>
 </footer>
 
 <div class="mobile-bar" id="mobileBar">
@@ -621,12 +622,6 @@
     <h2 id="authTitle">羽球分攤</h2>
     <p class="auth-subtitle" id="authSubtitle">登入以查看社團帳目</p>
 
-    <div class="auth-tabs">
-      <button type="button" class="auth-tab active" data-auth-tab="login">登入</button>
-      <button type="button" class="auth-tab" data-auth-tab="register">註冊</button>
-    </div>
-
-    <!-- Login Form -->
     <form class="auth-form" id="loginForm">
       <div class="field">
         <label for="loginEmail">電子郵件</label>
@@ -640,21 +635,7 @@
       <p class="auth-error" id="loginError"></p>
     </form>
 
-    <!-- Register Form -->
-    <form class="auth-form" id="registerForm" hidden>
-      <div class="field">
-        <label for="registerEmail">電子郵件</label>
-        <input type="email" id="registerEmail" placeholder="your@email.com" required autocomplete="email">
-      </div>
-      <div class="field">
-        <label for="registerPassword">密碼（至少 6 碼）</label>
-        <input type="password" id="registerPassword" placeholder="請輸入密碼" required minlength="6" autocomplete="new-password">
-      </div>
-      <button type="submit" class="btn primary" id="registerBtn">註冊</button>
-      <p class="auth-error" id="registerError"></p>
-    </form>
-
-    <p class="auth-footer" id="authFooter">需要邀請才能註冊社團帳目功能</p>
+    <p class="auth-footer">帳號由管理員在 Supabase 後台建立，請使用分配的帳號登入。</p>
   </div>
 </div>
 <script>
@@ -779,6 +760,9 @@
       version: 1,
       members: members,
       weeks: weeks,
+      hiddenMembers: Array.isArray(src.hiddenMembers)
+        ? src.hiddenMembers.filter(function (n) { return typeof n === 'string' && n.trim(); })
+        : [],
       draft: {
         date: typeof draftSrc.date === 'string' && parseISODate(draftSrc.date) ? draftSrc.date : todayISO(),
         courtFee: toInputString(draftSrc.courtFee),
@@ -993,10 +977,13 @@
     };
   }
 
-  function memberVisits(memberId) {
+  function memberVisits(member) {
+    const id = member.id;
+    const name = member.name;
     return state.weeks.reduce(function (total, week) {
       const hit = (week.attendees || []).some(function (a) {
-        return a.memberId === memberId;
+        if (a.isGuest) return false;
+        return a.memberId === id || a.name === name;
       });
       return total + (hit ? 1 : 0);
     }, 0);
@@ -1014,7 +1001,7 @@
 
     list.innerHTML = state.members.map(function (m) {
       const checked = state.draft.attending.indexOf(m.id) !== -1;
-      const visits = memberVisits(m.id);
+      const visits = memberVisits(m);
       const meta = visits > 0
         ? '參加 ' + visits + ' 次'
         : (m.isNew ? '第一次參加' : '還沒有出席紀錄');
@@ -1194,8 +1181,8 @@
   function renderSaveHint() {
     const w = latestWeek();
     $('saveHint').textContent = w
-      ? '上次儲存：' + formatDate(w.date, true) + ' · ' + money(w.total)
-      : '儲存後會保留在歷史紀錄';
+      ? '上次記錄：' + formatDate(w.date, true) + ' · ' + money(w.total)
+      : '按「計算並儲存」記到共用帳本';
   }
 
   function renderHistory() {
@@ -1207,7 +1194,7 @@
 
     if (!weeks.length) {
       $('historyStats').textContent = '';
-      $('historyList').innerHTML = '<div class="history-empty">還沒有紀錄。<br>儲存這週之後，就能回頭查每次的金額。</div>';
+      $('historyList').innerHTML = '<div class="history-empty">還沒有紀錄。<br>按「計算並儲存」把這週記下來，所有社員都看得到。</div>';
       return;
     }
 
@@ -1233,7 +1220,8 @@
       }
 
       const sub = shares.length + ' 人' +
-        (w.freeCount > 0 ? ' · 新人 ' + w.freeCount + ' 免費' : '');
+        (w.freeCount > 0 ? ' · 新人 ' + w.freeCount + ' 免費' : '') +
+        (w.createdBy ? ' · 由 ' + esc(w.createdBy) + ' 記' : '');
 
       return '<div class="week ' + (open ? 'open' : '') + '" data-week="' + w.id + '">' +
         '<button type="button" class="week-toggle" data-week-toggle="' + w.id + '" aria-expanded="' + open + '">' +
@@ -1357,7 +1345,7 @@
     return added;
   }
 
-  function saveWeek() {
+  async function saveWeek() {
     readFeeInputs();
     const comp = compute();
 
@@ -1416,7 +1404,14 @@
     updateComputed();
     renderHistory();
     renderSaveHint();
-    toast('已儲存這週紀錄，可以開始下一週了');
+    toast('已記下這週，正在同步到共用帳本...');
+
+    // 寫進 Supabase，讓所有社員看到同一份
+    const saved = await saveWeekToSupabase(week);
+    if (saved) {
+      await loadLedgerFromSupabase(true);
+      toast('已記下這週，所有社員都看得到');
+    }
   }
 
   function copyCurrent() {
@@ -1561,6 +1556,9 @@
         state.draft.attending = state.draft.attending.filter(function (attendId) {
           return attendId !== member.id;
         });
+        if (Array.isArray(state.hiddenMembers) && state.hiddenMembers.indexOf(member.name) === -1) {
+          state.hiddenMembers.push(member.name);
+        }
         persist();
         renderRoster();
         updateComputed();
@@ -1611,13 +1609,17 @@
       if (deleteButton) {
         const week = state.weeks.find(function (w) { return w.id === deleteButton.dataset.weekDelete; });
         if (!week) return;
-        if (!window.confirm('刪除 ' + formatDate(week.date, true) + ' 的紀錄？')) return;
+        if (!window.confirm('刪除 ' + formatDate(week.date, true) + ' 的紀錄？\n所有社員都會看不到這筆。')) return;
         state.weeks = state.weeks.filter(function (w) { return w.id !== week.id; });
         openWeeks.delete(week.id);
         persist();
         renderHistory();
         renderSaveHint();
-        toast('已刪除紀錄');
+        deleteWeekFromSupabase(week.id).then(function (ok) {
+          if (ok) {
+            toast('已刪除紀錄，所有社員同步移除');
+          }
+        });
       }
     });
 
@@ -1626,13 +1628,6 @@
     $('clearWeekBtn').addEventListener('click', clearWeek);
     $('mbDetailBtn').addEventListener('click', function () {
       $('resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-    // Auth tab switching
-    document.querySelectorAll('.auth-tab').forEach(function(tab) {
-      tab.addEventListener('click', function() {
-        switchAuthTab(tab.dataset.authTab);
-      });
     });
 
     // Login form
@@ -1647,27 +1642,16 @@
       handleLogin(email, password);
     });
 
-    // Register form
-    $('registerForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-      const email = $('registerEmail').value;
-      const password = $('registerPassword').value;
-      if (!email || !password) {
-        $('registerError').textContent = '請填寫電子郵件和密碼';
-        return;
-      }
-      if (password.length < 6) {
-        $('registerError').textContent = '密碼至少需要 6 個字元';
-        return;
-      }
-      handleRegister(email, password);
-    });
-
     // Logout button
     $('logoutBtn').addEventListener('click', function() {
       if (window.confirm('確定要登出嗎？')) {
         handleLogout();
       }
+    });
+
+    // 重新載入共用帳本
+    $('refreshLedgerBtn').addEventListener('click', function() {
+      loadLedgerFromSupabase(false);
     });
   }
 
@@ -1684,12 +1668,10 @@
   }
 
   function showMainApp() {
-    // Hide auth and warning overlays
     var authEl = $('authOverlay');
     if (authEl) authEl.hidden = true;
     var warnEl = $('storageWarn');
     if (warnEl) warnEl.hidden = true;
-    // Show main content
     var mainEl = document.querySelector('main');
     if (mainEl) mainEl.hidden = false;
   }
@@ -1699,102 +1681,46 @@
     if (mainEl) mainEl.hidden = true;
   }
 
-  function switchAuthTab(tab) {
-    const tabs = document.querySelectorAll('.auth-tab');
-    tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.authTab === tab); });
-
-    if (tab === 'login') {
-      $('loginForm').hidden = false;
-      $('registerForm').hidden = true;
-      $('authSubtitle').textContent = '登入以查看社團帳目';
-      $('authFooter').textContent = '需要邀請才能註冊社團帳目功能';
-    } else {
-      $('loginForm').hidden = true;
-      $('registerForm').hidden = false;
-      $('authSubtitle').textContent = '申請加入社團帳目';
-      $('authFooter').textContent = '註冊後需由管理員邀請才能使用';
-    }
-    $('loginError').textContent = '';
-    $('registerError').textContent = '';
-  }
-
   function updateUserBadge(user) {
     const badge = $('userBadge');
     if (!user || !supabase) {
       badge.hidden = true;
       return;
     }
-
     badge.hidden = false;
-    const email = user.email || '';
     var displayName = user.user_metadata && user.user_metadata.display_name
       ? user.user_metadata.display_name
-      : email.split('@')[0];
+      : (user.email || '').split('@')[0];
     $('userName').textContent = displayName;
     $('userAvatar').textContent = initial(displayName);
   }
 
   async function checkAuthState() {
     if (!supabase) {
-      isClubMember = true;
-      hideAuthOverlay();
-      showMainApp();
+      hideMainApp();
+      showAuthOverlay();
+      $('loginError').textContent = '無法連線到 Supabase，請確認網路後重新整理';
       return;
     }
-
     try {
       var sessionResult = await supabase.auth.getSession();
       var session = sessionResult.data && sessionResult.data.session;
-      var sessionError = sessionResult.error;
-
-      if (sessionError || !session) {
+      if (sessionResult.error || !session) {
         hideMainApp();
         showAuthOverlay();
         return;
       }
-
-      // Check if user is a club member
-      var profileResult = await supabase
-        .from('profiles')
-        .select('is_club_member, role, display_name')
-        .eq('id', session.user.id)
-        .single();
-
-      if (profileResult.error || !profileResult.data) {
-        // Create basic profile for new auth user
-        await supabase
-          .from('profiles')
-          .insert({
-            id: session.user.id,
-            email: session.user.email || '',
-            display_name: session.user.user_metadata && session.user.user_metadata.display_name
-              ? session.user.user_metadata.display_name
-              : ''
-          });
-        isClubMember = false;
-      } else {
-        isClubMember = profileResult.data.is_club_member;
-      }
-
-      if (!isClubMember) {
-        hideMainApp();
-        showAuthOverlay();
-        $('authSubtitle').textContent = '您的帳號尚未被邀請加入';
-        $('authFooter').textContent = '請聯絡社團管理員邀請您加入';
-        updateUserBadge(session.user);
-        return;
-      }
-
-      // Authenticated and club member - show main app
-      hideAuthOverlay();
+      isClubMember = true;
       updateUserBadge(session.user);
+      hideAuthOverlay();
       showMainApp();
-
+      await loadLedgerFromSupabase(true);
     } catch (err) {
       console.error('Auth check error:', err);
-      isClubMember = true;
-      hideAuthOverlay();
-      showMainApp();
+      isClubMember = false;
+      hideMainApp();
+      showAuthOverlay();
+      $('loginError').textContent = '連線失敗，請稍後再試';
     }
   }
 
@@ -1803,21 +1729,22 @@
     $('loginError').textContent = '';
     $('loginBtn').disabled = true;
     $('loginBtn').textContent = '登入中...';
-
     try {
       var loginResult = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password: password
       });
-
       if (loginResult.error) {
         $('loginError').textContent = loginResult.error.message;
         return false;
       }
-
       if (loginResult.data && loginResult.data.session) {
+        isClubMember = true;
         updateUserBadge(loginResult.data.session.user);
-        await checkAuthState();
+        hideAuthOverlay();
+        showMainApp();
+        await loadLedgerFromSupabase(true);
+        toast('登入成功，已載入共用帳本');
         return true;
       }
     } catch (err) {
@@ -1830,70 +1757,144 @@
     return false;
   }
 
-  async function handleRegister(email, password) {
-    if (!supabase) return false;
-    $('registerError').textContent = '';
-    $('registerBtn').disabled = true;
-    $('registerBtn').textContent = '註冊中...';
-
-    try {
-      var registerResult = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: { display_name: email.split('@')[0] }
-        }
-      });
-
-      if (registerResult.error) {
-        $('registerError').textContent = registerResult.error.message;
-        return false;
-      }
-
-      if (registerResult.data && registerResult.data.user) {
-        // Check if already a club member
-        var checkProfile = await supabase
-          .from('profiles')
-          .select('is_club_member')
-          .eq('id', registerResult.data.user.id)
-          .single();
-
-        if (checkProfile.data && checkProfile.data.is_club_member) {
-          isClubMember = true;
-          updateUserBadge(registerResult.data.user);
-          hideAuthOverlay();
-          showMainApp();
-          toast('註冊成功，歡迎加入！');
-        } else {
-          $('authSubtitle').textContent = '註冊成功，但需管理員邀請';
-          $('authFooter').textContent = '請聯絡社團管理員邀請您加入';
-          updateUserBadge(registerResult.data.user);
-          toast('帳號已建立，等待管理員邀請');
-        }
-        return true;
-      }
-    } catch (err) {
-      $('registerError').textContent = '註冊失敗，請稍後再試';
-      console.error('Register error:', err);
-    } finally {
-      $('registerBtn').disabled = false;
-      $('registerBtn').textContent = '註冊';
-    }
-    return false;
-  }
-
   async function handleLogout() {
     if (!supabase) return;
     try {
       await supabase.auth.signOut();
       isClubMember = false;
       updateUserBadge(null);
+      // 登出後不留在畫面上
+      state.weeks = [];
+      renderHistory();
+      renderSaveHint();
       hideAuthOverlay();
       showAuthOverlay();
       toast('已登出');
     } catch (err) {
       console.error('Logout error:', err);
     }
+  }
+
+  // ===================== Supabase 共用帳本 =====================
+
+  function currentUser() {
+    if (!supabase) return Promise.resolve(null);
+    return supabase.auth.getUser().then(function (r) {
+      return r && r.data ? r.data.user : null;
+    }).catch(function () { return null; });
+  }
+
+  async function loadLedgerFromSupabase(silent) {
+    if (!supabase) return;
+    var result = await supabase
+      .from('ledger')
+      .select('*')
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (result.error) {
+      console.error('Load ledger error:', result.error);
+      if (!silent) toast('讀取共用帳本失敗：' + result.error.message);
+      return;
+    }
+
+    var rows = result.data || [];
+    state.weeks = rows.map(normalizeWeekFromSupabase);
+
+    // 歷史裡出現過的名字補進社員名單（本機刪过的不加回來）
+    var hidden = new Set(state.hiddenMembers || []);
+    var names = new Set(state.members.map(function (m) { return m.name; }));
+    rows.forEach(function (row) {
+      (row.shares || []).forEach(function (s) {
+        if (!s || s.isGuest || !s.name) return;
+        var name = String(s.name).slice(0, 20);
+        if (names.has(name) || hidden.has(name)) return;
+        names.add(name);
+        state.members.push({ id: uid(), name: name, isNew: false, createdAt: Date.now() });
+      });
+    });
+
+    persist();
+    renderRoster();
+    renderHistory();
+    renderSaveHint();
+    if (!silent) toast('已同步共用帳本，共 ' + rows.length + ' 週');
+  }
+
+  function normalizeWeekFromSupabase(row) {
+    var shares = Array.isArray(row.shares) ? row.shares : [];
+    var attendees = shares.map(function (s) {
+      var isGuest = !!(s && s.isGuest);
+      return {
+        memberId: !isGuest && s && s.memberId ? s.memberId : null,
+        name: s && s.name ? String(s.name).slice(0, 20) : '未命名',
+        isGuest: isGuest,
+        free: !!(s && s.free),
+        amount: num(s && s.amount)
+      };
+    });
+
+    return {
+      id: row.id,
+      date: row.date || '',
+      courtFee: num(row.court_fee),
+      shuttleCount: num(row.shuttle_count),
+      shuttlePrice: num(row.shuttle_price),
+      shuttleFee: Math.round(num(row.shuttle_count) * num(row.shuttle_price)),
+      total: num(row.total),
+      attendees: attendees,
+      payingCount: Number.isFinite(Number(row.paying_count))
+        ? Number(row.paying_count)
+        : attendees.filter(function (a) { return !a.free; }).length,
+      freeCount: Number.isFinite(Number(row.free_count))
+        ? Number(row.free_count)
+        : attendees.filter(function (a) { return a.free; }).length,
+      createdBy: row.created_by || '',
+      createdAt: row.created_at || ''
+    };
+  }
+
+  async function saveWeekToSupabase(weekData) {
+    if (!supabase) return false;
+    var user = await currentUser();
+    if (!user) {
+      toast('登入逾時，請重新登入');
+      showAuthOverlay();
+      return false;
+    }
+
+    var payload = {
+      id: weekData.id,
+      user_id: user.id,
+      created_by: user.email || '',
+      date: weekData.date,
+      court_fee: weekData.courtFee,
+      shuttle_count: weekData.shuttleCount,
+      shuttle_price: weekData.shuttlePrice,
+      total: weekData.total,
+      paying_count: weekData.payingCount,
+      free_count: weekData.freeCount,
+      shares: weekData.attendees
+    };
+
+    var result = await supabase.from('ledger').upsert(payload, { onConflict: 'id' });
+    if (result.error) {
+      console.error('Save ledger error:', result.error);
+      toast('雲端儲存失敗：' + result.error.message);
+      return false;
+    }
+    return true;
+  }
+
+  async function deleteWeekFromSupabase(weekId) {
+    if (!supabase) return false;
+    var result = await supabase.from('ledger').delete().eq('id', weekId);
+    if (result.error) {
+      console.error('Delete ledger error:', result.error);
+      toast('雲端刪除失敗：' + result.error.message);
+      return false;
+    }
+    return true;
   }
 
   // ===================== Init =====================
@@ -1907,26 +1908,27 @@
 
     // Check auth state first, then show app or auth overlay
     checkAuthState().then(function() {
-      // After auth check completes, if club member, render the app
-      if (isClubMember) {
-        syncFeeInputs();
-        renderRoster();
-        renderGuests();
-        updateComputed();
-        renderHistory();
-        renderSaveHint();
-      }
+      // After auth check completes, render the app
+      syncFeeInputs();
+      renderRoster();
+      renderGuests();
+      updateComputed();
+      renderHistory();
+      renderSaveHint();
     });
 
     // Listen for auth state changes (e.g., login from another tab)
     if (supabase) {
       supabase.auth.onAuthStateChange(function(event, session) {
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && session) {
           updateUserBadge(session.user);
           checkAuthState();
         } else if (event === 'SIGNED_OUT') {
           isClubMember = false;
           updateUserBadge(null);
+          state.weeks = [];
+          renderHistory();
+          renderSaveHint();
           hideAuthOverlay();
           showAuthOverlay();
         }
